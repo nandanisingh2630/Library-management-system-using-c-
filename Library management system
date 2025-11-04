@@ -1,0 +1,358 @@
+# Library-management-system-using-c-
+
+/**
+ * LIBRARY MANAGEMENT SYSTEM (C LANGUAGE)
+ * ---------------------------------------
+ * This project is created to maintain library records
+ * such as adding new books, viewing available books,
+ * deleting a book, issuing a book, and displaying the
+ * list of issued books.
+ *
+ * Language Used  : C
+ * Concept Used   : File Handling, Structures, Functions
+ * Author         : [Your Name]
+ * Project Type   : Academic Mini Project
+ **/
+
+#include <stdio.h>      // For input/output functions like printf(), scanf()
+#include <stdlib.h>     // For system() and exit() functions
+#include <string.h>     // For string handling functions like strcpy(), strlen()
+#include <time.h>       // For fetching current date and time
+
+/**
+ * STRUCTURES: Custom Data Types
+ * --------------------------------
+ * Used to store related data items of different types
+ * under a single name.**/
+
+// Structure for book details
+struct books {
+    int id;                 // Unique Book ID
+    char bookName[50];      // Name of the Book
+    char authorName[50];    // Author's Name
+    char date[12];          // Date when the book was added
+} b; // 'b' is a global variable of structure type 'books'
+
+// Structure for issued book information
+struct student {
+    int id;                 // Issued Book ID
+    char sName[50];         // Student Name
+    char sClass[50];        // Student's Class or Department
+    int sRoll;              // Student Roll Number
+    char bookName[50];      // Name of the Book issued
+    char date[12];          // Date of Issue
+} s; // 's' is a global variable of structure type 'student'
+
+// File pointer for file handling operations
+FILE *fp;
+
+/**
+ * FUNCTION DECLARATIONS
+ * ----------------------
+ * Function prototypes inform the compiler about
+ * function names and their return types before usage.
+ **/
+void addBook(void);
+void booksList(void);
+void del(void);
+void issueBook(void);
+void issueList(void);
+
+// Helper function to remove newline character from string inputs
+static void strip_newline(char *str) {
+    size_t l = strlen(str);
+    if (l > 0 && str[l - 1] == '\n')
+        str[l - 1] = '\0';
+}
+
+/**
+ * ----------------
+ * The main function is the entry point of every C program.
+ * It shows a menu and calls other functions accordingly.
+ **/
+int main(void) {
+    int ch; // Variable to store user choice
+
+    while (1) { // Infinite loop until user exits
+
+        // Clear screen depending on OS
+#ifdef _WIN32
+        system("cls");
+#else
+        system("clear");
+#endif
+
+        // Displaying main menu options
+        printf("<== LIBRARY MANAGEMENT SYSTEM ==>\n");
+        printf("1. Add Book\n");
+        printf("2. Books List\n");
+        printf("3. Remove Book\n");
+        printf("4. Issue Book\n");
+        printf("5. Issued Book List\n");
+        printf("0. Exit\n\n");
+
+        printf("Enter your choice: ");
+        if (scanf("%d", &ch) != 1) {
+            // Handling invalid input
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
+            printf("Invalid input. Try again.\n");
+            printf("Press Enter to continue...");
+            getchar();
+            continue;
+        }
+
+        // To avoid unwanted newline characters
+        while (getchar() != '\n');
+
+        // Switch statement to execute user’s choice
+        switch (ch) {
+            case 0:
+                exit(0); // Exit the program safely
+
+            case 1:
+                addBook(); // Call function to add a new book
+                break;
+
+            case 2:
+                booksList(); // Call function to display book list
+                break;
+
+            case 3:
+                del(); // Call function to delete a book
+                break;
+
+            case 4:
+                issueBook(); // Call function to issue a book
+                break;
+
+            case 5:
+                issueList(); // Call function to show issued books
+                break;
+
+            default:
+                printf("Invalid Choice! Please Try Again.\n");
+        }
+
+        printf("\nPress Enter To Continue...");
+        getchar(); // Wait for user input before showing menu again
+    }
+
+    return 0; // Program ends successfully
+}
+
+/**
+ * FUNCTION: addBook()
+ * --------------------
+ * Adds a new book record to "books.txt" using file handling.
+ **/
+void addBook(void) {
+    char myDate[12];
+
+    // Getting current system date
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(myDate, "%02d/%02d/%d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
+    strcpy(b.date, myDate);
+
+    fp = fopen("books.txt", "ab"); // Open file in append-binary mode
+    if (!fp) {
+        perror("Error opening file");
+        return;
+    }
+
+    printf("Enter Book ID: ");
+    scanf("%d", &b.id);
+    while (getchar() != '\n');
+
+    printf("Enter Book Name: ");
+    fgets(b.bookName, sizeof(b.bookName), stdin);
+    strip_newline(b.bookName);
+
+    printf("Enter Author Name: ");
+    fgets(b.authorName, sizeof(b.authorName), stdin);
+    strip_newline(b.authorName);
+
+    fwrite(&b, sizeof(b), 1, fp); // Write book record to file
+    fclose(fp);
+
+    printf("\n✅ Book Added Successfully!\n");
+}
+
+/**
+ * FUNCTION: booksList()
+ * ---------------------
+ * Displays all the books currently available in the library.
+ **/
+void booksList(void) {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+
+    printf("<== Available Books ==>\n\n");
+    printf("%-10s %-30s %-20s %s\n\n", "Book ID", "Book Name", "Author", "Date Added");
+
+    fp = fopen("books.txt", "rb"); // Open file in read mode
+    if (!fp) {
+        printf("No books found in the record.\n");
+        return;
+    }
+
+    // Read and display each record
+    while (fread(&b, sizeof(b), 1, fp) == 1) {
+        printf("%-10d %-30s %-20s %s\n", b.id, b.bookName, b.authorName, b.date);
+    }
+
+    fclose(fp);
+}
+
+/**
+ * FUNCTION: del()
+ * ----------------
+ * Deletes a book record from the file based on book ID.
+ **/
+void del(void) {
+    int id, found = 0;
+
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+
+    printf("<== Remove Book ==>\n\n");
+    printf("Enter Book ID to remove: ");
+    scanf("%d", &id);
+    while (getchar() != '\n');
+
+    FILE *ft;
+    fp = fopen("books.txt", "rb");
+    if (!fp) {
+        printf("No book records found.\n");
+        return;
+    }
+    ft = fopen("temp.txt", "wb"); // Temporary file for modified data
+
+    // Copy records except the one to be deleted
+    while (fread(&b, sizeof(b), 1, fp) == 1) {
+        if (id == b.id)
+            found = 1; // Book found and skipped
+        else
+            fwrite(&b, sizeof(b), 1, ft);
+    }
+
+    fclose(fp);
+    fclose(ft);
+
+    // If book found, update the file
+    if (found) {
+        remove("books.txt");
+        rename("temp.txt", "books.txt");
+        printf("\n✅ Book Deleted Successfully!\n");
+    } else {
+        remove("temp.txt");
+        printf("\n❌ Book ID not found in records.\n");
+    }
+}
+
+/**
+ * FUNCTION: issueBook()
+ * ----------------------
+ * Issues a book to a student and stores record in issue.txt.
+ **/
+void issueBook(void) {
+    char myDate[12];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(myDate, "%02d/%02d/%d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
+    strcpy(s.date, myDate);
+
+    int found = 0;
+
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+
+    printf("<== Issue Book ==>\n\n");
+    printf("Enter Book ID to issue: ");
+    scanf("%d", &s.id);
+    while (getchar() != '\n');
+
+    // Check if the book exists before issuing
+    fp = fopen("books.txt", "rb");
+    if (!fp) {
+        printf("No books available to issue.\n");
+        return;
+    }
+
+    while (fread(&b, sizeof(b), 1, fp) == 1) {
+        if (b.id == s.id) {
+            strcpy(s.bookName, b.bookName);
+            found = 1;
+            break;
+        }
+    }
+    fclose(fp);
+
+    if (!found) {
+        printf("❌ No book found with the given ID.\n");
+        return;
+    }
+
+    fp = fopen("issue.txt", "ab");
+    if (!fp) {
+        perror("Error opening issue file");
+        return;
+    }
+
+    printf("Enter Student Name: ");
+    fgets(s.sName, sizeof(s.sName), stdin);
+    strip_newline(s.sName);
+
+    printf("Enter Student Class: ");
+    fgets(s.sClass, sizeof(s.sClass), stdin);
+    strip_newline(s.sClass);
+
+    printf("Enter Student Roll No: ");
+    scanf("%d", &s.sRoll);
+    while (getchar() != '\n');
+
+    fwrite(&s, sizeof(s), 1, fp);
+    fclose(fp);
+
+    printf("\n📘 Book Issued Successfully!\n");
+}
+
+/**
+ * FUNCTION: issueList()
+ * ---------------------
+ * Displays all the books that have been issued.
+ **/
+void issueList(void) {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+
+    printf("<== Issued Book List ==>\n\n");
+    printf("%-10s %-25s %-15s %-10s %-25s %s\n\n",
+           "Book ID", "Student Name", "Class", "Roll", "Book Name", "Date Issued");
+
+    fp = fopen("issue.txt", "rb");
+    if (!fp) {
+        printf("No issued book records found.\n");
+        return;
+    }
+
+    while (fread(&s, sizeof(s), 1, fp) == 1) {
+        printf("%-10d %-25s %-15s %-10d %-25s %s\n",
+               s.id, s.sName, s.sClass, s.sRoll, s.bookName, s.date);
+    }
+
+    fclose(fp);
+}
